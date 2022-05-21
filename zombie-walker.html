@@ -18,7 +18,7 @@ html, body {
 }
 
 main {
-    --room-size: 12;
+    --room-size: 6;
     --border-factor: 0.9; /* width of the grid inside the playfield so there's a border */
     --xadd: calc(100vw * calc(1 - var(--border-factor)) / 2);
     --half: calc(calc(100vw * var(--border-factor)) / var(--room-size) / 2);
@@ -118,16 +118,33 @@ main .entry-door, main .exit-door {
     position: absolute;
 }
 main .entry-door {
-    bottom: 42%;
-    left: 0;
+    bottom: 51%;
+    left: -12%;
     background: url(entry-door.png);
     background-size: cover;
 }
 main .exit-door {
-    bottom: 42%;
-    right: 0;
+    bottom: 51%;
+    right: -12%;
     background:  url(exit-door.png);
     background-size: cover;
+}
+
+main .item {
+    display: block;
+    width: 100%;
+    z-index: 1100;
+    aspect-ratio: 1 / 1;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-size: cover;
+}
+main .item.star {
+    background-image: url(item-star.png);
+}
+main .item.stone-column {
+    background-image: url(item-stone-column.png);
 }
 
 
@@ -138,11 +155,13 @@ main .exit-door {
     background: url(zombie_0-fs8.png);
     background-size: 3600%;
     aspect-ratio: 1/1;
-    background-position: 0 0;
+    background-position: -400% -500%; /* lurch SE */
     width: calc(var(--half) * 2);
     top: calc(var(--midtop) - calc(var(--half) / 2) - var(--half));
     left: calc(var(--xadd));
     transition: transform 1400ms linear; /* time to walk between adjacent squares */
+    transform: translateX(-32%) translateY(-22%);
+    opacity: 0;
 }
 </style>
 </head>
@@ -178,7 +197,7 @@ main .exit-door {
     let frame = 0, framewait = 0;
     let destinations = [];
     let walking = false;
-    let us_position = [0, 0];
+    let us_position = [0, -1];
     function createSquares() {
         for (let x=0; x<ROOM_SIZE; x++) {
             let row = [];
@@ -192,6 +211,12 @@ main .exit-door {
 
                 if (Math.random() < 0.3 && !(x==0 && y==0) && !(x==ROOM_SIZE-1 && y==ROOM_SIZE-1)) {
                     s.classList.add("gone");
+                }
+
+                if (Math.random() < 0.3 && !(x==0 && y==0) && !(x==ROOM_SIZE-1 && y==ROOM_SIZE-1) && !s.classList.contains("gone")) {
+                    let d = document.createElement("b");
+                    d.className = "item stone-column";
+                    s.append(d);
                 }
 
                 if (x == 0 && y == 0) {
@@ -237,6 +262,7 @@ main .exit-door {
     function isvalid(pos) {
         if (pos[0] >= 0 && pos[1] >= 0 && pos[0] < ROOM_SIZE && pos[1] < ROOM_SIZE) {
             if (squares[pos[0]][pos[1]].classList.contains("gone")) return false;
+            if (squares[pos[0]][pos[1]].querySelector(".item")) return false;
             return true;
         }
         return false;
@@ -287,11 +313,12 @@ main .exit-door {
             [newpath, success] = astar(us_position, [x, y]);
         }
         destinations = destinations.concat(newpath);
+        us.style.opacity = 1;
 
         /* light up all destinations */
         squares.forEach((r, y) => { r.forEach((s, x) => { s.classList.remove("destination"); }); });
         destinations.forEach(([x, y], idx) => { 
-            setTimeout(() => { squares[x][y].classList.add("destination"); }, 50 * idx);
+            setTimeout(() => { if (squares[x] && squares[x][y]) squares[x][y].classList.add("destination"); }, 50 * idx);
         });
 
         if (!walking) { nextDestination(); }
@@ -327,8 +354,10 @@ main .exit-door {
         createSquares();
         setTimeout(showSquares, 20);
         us.addEventListener("transitionend", nextDestination);
-        animateUs();
-        walkTo(ROOM_SIZE - 1, ROOM_SIZE - 1);
+        setTimeout(() => {
+            animateUs();
+            walkTo(ROOM_SIZE - 1, ROOM_SIZE - 1);
+        }, 500); // same time as the room takes to appear, which is transition-delay lead figure
     }
 
     init();
