@@ -18,7 +18,7 @@ html, body {
 }
 
 main {
-    --room-size: 10;
+    --room-size: 5;
     --border-factor: 0.9; /* width of the grid inside the playfield so there's a border */
     --xadd: calc(100vw * calc(1 - var(--border-factor)) / 2);
     --half: calc(calc(100vw * var(--border-factor)) / var(--room-size) / 2);
@@ -93,8 +93,9 @@ main div::after {
     content: "";
     width: 100%;
     height: 100%;
-    background: url(simple-floor-128x64.png);
-    background-size: cover;
+    background: url(floors-128x64.png);
+    background-size: 900%;
+    background-position: -300% -200%;
     top: 0;
     left: 0;
     position: absolute;
@@ -304,10 +305,10 @@ main .exit-door {
         if (px == x && py > y) { dir = "NW"; }
         else if (px == x && py < y) { dir = "SE"; }
         else if (px == x && py == y) { console.log("unmoving!", x, y); return nextDestination(); }
-        else if (px < x && py > y) { dir = "W"; }
+        else if (px < x && py > y) { dir = "N"; }
         else if (px < x && py < y) { dir = "E"; }
         else if (px < x && py == y) { dir = "NE"; }
-        else if (px > x && py > y) { dir = "N"; }
+        else if (px > x && py > y) { dir = "W"; }
         else if (px > x && py < y) { dir = "S"; }
         else if (px > x && py == y) { dir = "SW"; }
         let left = x + y;
