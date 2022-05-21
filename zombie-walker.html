@@ -104,6 +104,10 @@ main div.destination::after {
     filter: sepia(100%);
 }
 
+main div.gone {
+    opacity: 0;
+}
+
 main .entry-door, main .exit-door {
     display: block;
     width: 60%;
@@ -182,7 +186,11 @@ main .exit-door {
                 s.style.setProperty("--y", y)
                 s.append(`${x},${y}`);
                 row.push(s);
-                s.style.transform = "translateY(100vw)";
+                s.style.transform = "translateY(100vw)"; // move offscreen for showSquares to reveal
+
+                if (Math.random() < 0.6 && !(x==0 && y==0) && !(x==ROOM_SIZE-1 && y==ROOM_SIZE-1)) {
+                    s.classList.add("gone");
+                }
 
                 if (x == 0 && y == 0) {
                     let d = document.createElement("em");
@@ -225,12 +233,17 @@ main .exit-door {
     }
 
     function isvalid(pos) {
-        if (pos[1] == 1 && pos[0] < 7) return false;
-        if (pos[1] == 7 && pos[0] > 1) return false;
-        return pos[0] >= 0 && pos[1] >= 0 && pos[0] < ROOM_SIZE && pos[1] < ROOM_SIZE;
+        if (pos[0] >= 0 && pos[1] >= 0 && pos[0] < ROOM_SIZE && pos[1] < ROOM_SIZE) {
+            if (squares[pos[0]][pos[1]].classList.contains("gone")) return false;
+            return true;
+        }
+        return false;
     }
 
     function astar(start, end, heuristic=pythagoras) {
+        const CARDINALS = [[-1,0], [1,0], [0,1], [0,-1]];
+        const DIAGONALS = [[1,1], [1,-1], [-1,-1], [-1,1]];
+        const ALL_DIRECTIONS = CARDINALS.concat(DIAGONALS);
         let openlist = [{position: start, path: [start], total: heuristic(start, end)}];
         let visited = new Set();
         let loops = 0;
@@ -243,7 +256,7 @@ main .exit-door {
                 // found the goal; return it
                 return current.path;
             }
-            [[-1,0], [1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,-1], [-1,1]].forEach(([addx, addy]) => {
+            ALL_DIRECTIONS.forEach(([addx, addy]) => {
                 let newpos = [current.position[0] + addx, current.position[1] + addy];
                 let nps = newpos.join("-");
                 if (isvalid(newpos) && !visited.has(nps)) {
