@@ -18,7 +18,7 @@ html, body {
 }
 
 main {
-    --room-size: 5;
+    --room-size: 12;
     --border-factor: 0.9; /* width of the grid inside the playfield so there's a border */
     --xadd: calc(100vw * calc(1 - var(--border-factor)) / 2);
     --half: calc(calc(100vw * var(--border-factor)) / var(--room-size) / 2);
@@ -32,7 +32,7 @@ main {
 main {
     width: 100vw;
     aspect-ratio: 16 / 10;
-    background: url(Starfield%207%20-%20512x512.png);
+    background: url(starfield-512x512.png);
     position: relative;
     overflow: hidden;
 }
@@ -75,8 +75,9 @@ main div {
     align-items: center;
     justify-content: center;
     z-index: calc(500 + var(--y) - var(--x));
-    transition: transform 400ms cubic-bezier(.22,.93,.83,1.1);
-    transition-delay: calc(50ms * calc(var(--y) - var(--x)));
+    transition: transform 400ms cubic-bezier(.22,.93,.83,1.1); 
+    /* total time taken for the level to appear is the first number */
+    transition-delay: calc(500ms * calc(var(--y) + var(--x)) / calc(var(--room-size) * 2));
     text-indent: -100em;
 }
 main div::before {
@@ -95,14 +96,14 @@ main div::after {
     height: 100%;
     background: url(floors-128x64.png);
     background-size: 900%;
-    background-position: -300% -200%;
+    background-position: -300% -500%;
     top: 0;
     left: 0;
     position: absolute;
 }
 
 main div.destination::after {
-    filter: sepia(100%);
+    filter: sepia(100%) hue-rotate(100deg);
 }
 
 main div.gone {
@@ -134,7 +135,7 @@ main .exit-door {
     display: block;
     position: absolute;
     z-index: 1100;
-    background: url(zombie_0.png);
+    background: url(zombie_0-fs8.png);
     background-size: 3600%;
     aspect-ratio: 1/1;
     background-position: 0 0;
@@ -189,7 +190,7 @@ main .exit-door {
                 row.push(s);
                 s.style.transform = "translateY(100vw)"; // move offscreen for showSquares to reveal
 
-                if (Math.random() < 0.6 && !(x==0 && y==0) && !(x==ROOM_SIZE-1 && y==ROOM_SIZE-1)) {
+                if (Math.random() < 0.3 && !(x==0 && y==0) && !(x==ROOM_SIZE-1 && y==ROOM_SIZE-1)) {
                     s.classList.add("gone");
                 }
 
@@ -248,6 +249,7 @@ main .exit-door {
         let openlist = [{position: start, path: [start], total: heuristic(start, end)}];
         let visited = new Set();
         let loops = 0;
+        let best, best_de = 99999;
         while (openlist.length > 0) {
             loops += 1;
             if (loops > 1000) { console.log("avoiding infinite loop!"); break; }
@@ -255,30 +257,34 @@ main .exit-door {
             let current = openlist.shift();
             if (current.position[0] == end[0] && current.position[1] == end[1]) {
                 // found the goal; return it
-                return current.path;
+                return [current.path, true];
             }
-            ALL_DIRECTIONS.forEach(([addx, addy]) => {
+            if (current.de < best_de) { best = current; best_de = current.de; }
+            CARDINALS.forEach(([addx, addy]) => {
                 let newpos = [current.position[0] + addx, current.position[1] + addy];
                 let nps = newpos.join("-");
                 if (isvalid(newpos) && !visited.has(nps)) {
                     visited.add(nps);
+                    let ds = heuristic(start, newpos), de = heuristic(end, newpos);
                     openlist.push({
                         path: current.path.concat([newpos]),
-                        total: heuristic(start, newpos) + heuristic(end, newpos),
+                        total: ds + de,
+                        ds: ds, de: de,
                         position: newpos
                     });
                 }
             });
         }
-        return []; // no path
+        if (best) return [best.path, false];
+        return [[], false]; // no path
     }
 
     function walkTo(x, y) {
-        let newpath;
+        let newpath, success;
         if (destinations.length > 0) {
-            newpath = astar(destinations[destinations.length - 1], [x, y]);
+            [newpath, success] = astar(destinations[destinations.length - 1], [x, y]);
         } else {
-            newpath = astar(us_position, [x, y]);
+            [newpath, success] = astar(us_position, [x, y]);
         }
         destinations = destinations.concat(newpath);
 
@@ -304,7 +310,7 @@ main .exit-door {
         let [px, py] = us_position;
         if (px == x && py > y) { dir = "NW"; }
         else if (px == x && py < y) { dir = "SE"; }
-        else if (px == x && py == y) { console.log("unmoving!", x, y); return nextDestination(); }
+        else if (px == x && py == y) { return nextDestination(); }
         else if (px < x && py > y) { dir = "N"; }
         else if (px < x && py < y) { dir = "E"; }
         else if (px < x && py == y) { dir = "NE"; }
@@ -322,7 +328,7 @@ main .exit-door {
         setTimeout(showSquares, 20);
         us.addEventListener("transitionend", nextDestination);
         animateUs();
-        walkTo(9,9);
+        walkTo(ROOM_SIZE - 1, ROOM_SIZE - 1);
     }
 
     init();
