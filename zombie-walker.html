@@ -6,6 +6,11 @@
 <title>Zombie Walker</title>
 <style>
 
+@font-face {
+    font-family: "KillCrazy BB";
+    src: url("KillCrazy-BB.woff2") format("woff2");
+}
+
 /* Reset */
 * {
     box-sizing: border-box;
@@ -163,11 +168,32 @@ main .item.stone-column {
     transform: translateX(-32%) translateY(-22%);
     opacity: 0;
 }
+
+#speech {
+    position: absolute;
+    color: black;
+    font-family: "KillCrazy BB", sans-serif;
+    border-image: url(speech-border.png) 60;
+    background: white;
+    font-size: 3vw;
+    z-index: 2000;
+    text-align: center;
+    font-weight: normal;
+    max-width: 30%;
+    padding: 0.5em;
+    background-clip: padding-box; 
+    border-width: 1vw;
+    border-style: solid;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease;
+}
 </style>
 </head>
 <body>
     <main><!-- the playfield -->
         <span id="us"></span>
+        <strong id="speech"></strong>
     </main>
 
     <aside><!-- the controls -->
@@ -180,10 +206,11 @@ main .item.stone-column {
 (() => {
     const main = document.querySelector("main");
     const us = document.querySelector("#us");
+    const speech = document.querySelector("#speech");
     const squares = [];
     const ROOM_SIZE = parseInt(getComputedStyle(main, null).getPropertyValue("--room-size"), 10);
     const ACTIONS = {
-        stance: [0, 1, 2, 3],
+        stance: [0], //, 2], //, 3],
         lurch: [4, 5, 6, 7, 8, 9, 10, 11],
         slam: [12, 13, 14, 15],
         bite: [16, 17, 18, 19],
@@ -350,13 +377,39 @@ main .item.stone-column {
         us_position = dest;
     }
 
+    function speak(text, vanishTimeout) {
+        speech.innerHTML = "";
+        let usbcr = us.getBoundingClientRect();
+        speech.style.left = (usbcr.x + (usbcr.width / 2)) + "px";
+        speech.style.bottom = (usbcr.bottom + 100) + "px";
+        let spans = [];
+        Array.from(text).forEach((c, idx) => {
+            let s = document.createElement("span");
+            s.append(c);
+            s.style.opacity = 0;
+            s.style.transition = "opacity 20ms ease";
+            s.style.transitionDelay = (50 * idx) + "ms";
+            speech.append(s);
+            spans.push(s);
+        });
+        function showspans() {
+            spans.forEach(s => { s.style.opacity = 1; });
+            speech.removeEventListener("transitionend", showspans);
+            setTimeout(() => { speech.style.opacity = 0; }, vanishTimeout || 2000);
+        }
+        speech.style.opacity = 1;
+        speech.addEventListener("transitionend", showspans);
+    }
+
     function init() {
         createSquares();
         setTimeout(showSquares, 20);
         us.addEventListener("transitionend", nextDestination);
         setTimeout(() => {
             animateUs();
-            walkTo(ROOM_SIZE - 1, ROOM_SIZE - 1);
+            walkTo(0, 0);
+            setTimeout(() => { speak("BRAAAAAAAINS..."); }, 1000);
+            setTimeout(() => { walkTo(ROOM_SIZE - 1, ROOM_SIZE - 1); }, 2500);
         }, 500); // same time as the room takes to appear, which is transition-delay lead figure
     }
 
